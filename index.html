@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Freedom Call - बिना लॉगिन चैट & कॉल</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Main App Container */
+        .app-container {
+            width: 95%;
+            max-width: 1400px;
+            height: 90vh;
+            background: rgba(255,255,255,0.95);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: flex;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Sidebar - Users & Info */
+        .sidebar {
+            width: 280px;
+            background: #2d2f36;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #40434e;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: #1e1f24;
+            border-bottom: 1px solid #40434e;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .online-count {
+            font-size: 0.8rem;
+            background: #10b981;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-left: 10px;
+        }
+
+        .user-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .user-item {
+            padding: 12px 15px;
+            margin: 5px 0;
+            background: #3a3d48;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-item:hover {
+            background: #4a4d5a;
+            transform: translateX(5px);
+        }
+
+        .user-item.active {
+            background: #667eea;
+            box-shadow: 0 2px 10px rgba(102,126,234,0.4);
+        }
+
+        .user-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+
+        /* Main Chat Area */
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fc;
+        }
+
+        .chat-header {
+            padding: 20px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .current-user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .call-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .call-btn {
+            background: #667eea;
+            border: none;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .call-btn.video {
+            background: #10b981;
+        }
+
+        .call-btn.voice {
+            background: #f59e0b;
+        }
+
+        .call-btn.end {
+            background: #ef4444;
+        }
+
+        .call-btn:hover {
+            transform: scale(1.02);
+            filter: brightness(1.05);
+        }
+
+        /* Messages Area */
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            position: relative;
+            animation: fadeIn 0.2s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.sent {
+            background: #667eea;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.received {
+            background: white;
+            color: #1f2937;
+            border: 1px solid #e5e7eb;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message-name {
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+
+        .message-text {
+            font-size: 0.95rem;
+            word-wrap: break-word;
+        }
+
+        .message-time {
+            font-size: 0.65rem;
+            text-align: right;
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 12px 18px;
+            border: 2px solid #e5e7eb;
+            border-radius: 30px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .input-area input:focus {
+            border-color: #667eea;
+        }
+
+        .input-area button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        /* Video Call Modal */
+        .video-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .video-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .video-box {
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            width: 400px;
+            max-width: 90%;
+            position: relative;
+        }
+
+        .video-box video {
+            width: 100%;
+            height: auto;
+            background: #000;
+        }
+
+        .video-box label {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            width: 350px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .login-card input {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border: 2px solid #e5e7eb;
+            border-radius: 30px;
+            font-size: 1rem;
+        }
+
+        .login-card button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 80px; }
+            .sidebar-header h2 span, .user-item span:last-child { display: none; }
+            .user-item { justify-content: center; }
+            .message { max-width: 85%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+    <div class="login-card">
+        <h1>🎙️ Freedom Call</h1>
+        <p>बिना लॉगिन, तुरंत जुड़ें</p>
+        <input type="text" id="usernameInput" placeholder="अपना निकनेम लिखें" maxlength="20">
+        <button onclick="joinChat()">✨ चैट में जाएं ✨</button>
+    </div>
+</div>
+
+<div class="app-container" id="appContainer" style="display: none;">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>👥 ऑनलाइन <span class="online-count" id="onlineCount">0</span></h2>
+        </div>
+        <div class="user-list" id="userList">
+            <div style="text-align: center; padding: 20px;">कोई यूजर ऑनलाइन नहीं</div>
+        </div>
+    </div>
+    <div class="main-chat">
+        <div class="chat-header">
+            <div class="current-user-info">
+                <div>💬 <span id="currentChatUser">सभी से बात करें</span></div>
+            </div>
+            <div class="call-buttons">
+                <button class="call-btn voice" onclick="startVoiceCall()">🎤 वॉइस कॉल</button>
+                <button class="call-btn video" onclick="startVideoCall()">📹 वीडियो कॉल</button>
+                <button class="call-btn end" id="endCallBtn" style="display: none;" onclick="endCall()">📞 कॉल एंड करें</button>
+            </div>
+        </div>
+        <div class="messages-area" id="messagesArea">
+            <div style="text-align: center; color: #888;">👋 नमस्ते! अपना पहला मैसेज भेजें</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="मैसेज टाइप करें..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()">📤 भेजें</button>
+        </div>
+    </div>
+</div>
+
+<div class="video-modal" id="videoModal">
+    <div class="video-container" id="videoContainer"></div>
+    <button onclick="endCall()" style="margin-top: 20px; background: red; color: white; border: none; padding: 12px 30px; border-radius: 30px; cursor: pointer;">🔴 कॉल एंड करें</button>
+</div>
+
+<script>
+    // ==================== WebRTC & Signaling Setup ====================
+    let localStream = null;
+    let peerConnection = null;
+    let currentCallType = null; // 'voice' or 'video'
+    let targetUserId = null;
+    let currentUsername = "";
+    let allUsers = {};
+    let activeCall = false;
+
+    // Simple Peer-to-Peer Signaling via BroadcastChannel (for demo - same tab)
+    // In real scenario, use WebSocket or Firebase. Here we'll use localStorage events for simplicity
+    
+    // For multi-tab signaling (demo purpose)
+    const signalingChannel = new BroadcastChannel('webrtc_signal');
+    
+    signalingChannel.onmessage = (event) => {
+        const { type, from, to, data, sdp, candidate, callType } = event.data;
+        if(to !== currentUsername && to !== "all") return;
+        
+        if(type === 'offer') {
+            handleOffer(from, sdp, callType);
+        } else if(type === 'answer') {
+            handleAnswer(sdp);
+        } else if(type === 'ice-candidate') {
+            if(peerConnection) {
+                peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            }
+        } else if(type === 'end-call') {
+            endCall();
+        }
+    };
+    
+    async function handleOffer(from, sdp, callType) {
+        if(activeCall) {
+            alert("आप पहले से कॉल में हैं!");
+            return;
+        }
+        targetUserId = from;
+        currentCallType = callType;
+        activeCall = true;
+        
+        await setupLocalStream(callType === 'video');
+        peerConnection = createPeerConnection();
+        await peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp }));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        
+        signalingChannel.postMessage({
+            type: 'answer',
+            from: currentUsername,
+            to: targetUserId,
+            sdp: answer.sdp
+        });
+        
+        showCallUI(true, callType === 'video');
+    }
+    
+    async function handleAnswer(sdp) {
+        if(peerConnection) {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp }));
+        }
+    }
+    
+    async function startVoiceCall() {
+        if(!targetUserId || targetUserId === currentUsername) {
+            alert("पहले किसी यूजर को सेलेक्ट करें!");
+            return;
+        }
+        if(activeCall) { alert("कॉल पहले से चल रही है"); return; }
+        currentCallType = 'voice';
+        activeCall = true;
+        await setupLocalStream(false);
+        peerConnection = createPeerConnection();
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        
+        signalingChannel.postMessage({
+            type: 'offer',
+            from: currentUsername,
+            to: targetUserId,
+            sdp: offer.sdp,
+            callType: 'voice'
+        });
+        showCallUI(true, false);
+    }
+    
+    async function startVideoCall() {
+        if(!targetUserId || targetUserId === currentUsername) {
+            alert("पहले किसी यूजर को सेलेक्ट करें!");
+            return;
+        }
+        if(activeCall) { alert("कॉल पहले से चल रही है"); return; }
+        currentCallType = 'video';
+        activeCall = true;
+        await setupLocalStream(true);
+        peerConnection = createPeerConnection();
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        
+        signalingChannel.postMessage({
+            type: 'offer',
+            from: currentUsername,
+            to: targetUserId,
+            sdp: offer.sdp,
+            callType: 'video'
+        });
+        showCallUI(true, true);
+    }
+    
+    async function setupLocalStream(isVideo) {
+        if(localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+        }
+        const constraints = { audio: true, video: isVideo };
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        if(isVideo && peerConnection) {
+            const videoElement = document.createElement('video');
+            videoElement.srcObject = localStream;
+            videoElement.autoplay = true;
+            videoElement.muted = true;
+            // show local video in modal
+        }
+    }
+    
+    function createPeerConnection() {
+        const pc = new RTCPeerConnection({
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        });
+        if(localStream) {
+            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+        }
+        pc.onicecandidate = (event) => {
+            if(event.candidate) {
+                signalingChannel.postMessage({
+                    type: 'ice-candidate',
+                    from: currentUsername,
+                    to: targetUserId,
+                    candidate: event.candidate
+                });
+            }
+        };
+        pc.ontrack = (event) => {
+            const remoteVideo = document.getElementById('remoteVideo');
+            if(remoteVideo) {
+                remoteVideo.srcObject = event.streams[0];
+            }
+        };
+        return pc;
+    }
+    
+    function endCall() {
+        if(peerConnection) {
+            peerConnection.close();
+            peerConnection = null;
+        }
+        if(localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            localStream = null;
+        }
+        activeCall = false;
+        currentCallType = null;
+        showCallUI(false, false);
+        signalingChannel.postMessage({
+            type: 'end-call',
+            from: currentUsername,
+            to: targetUserId
+        });
+        targetUserId = null;
+        document.getElementById('videoModal').style.display = 'none';
+    }
+    
+    function showCallUI(inCall, isVideo) {
+        document.getElementById('endCallBtn').style.display = inCall ? 'inline-block' : 'none';
+        if(inCall && isVideo) {
+            document.getElementById('videoModal').style.display = 'flex';
+            const container = document.getElementById('videoContainer');
+            container.innerHTML = `
+                <div class="video-box"><video id="localVideo" autoplay muted playsinline></video><label>आप</label></div>
+                <div class="video-box"><video id="remoteVideo" autoplay playsinline></video><label>दूसरा यूजर</label></div>
+            `;
+            if(localStream) document.getElementById('localVideo').srcObject = localStream;
+        } else if(inCall && !isVideo) {
+            alert("🎧 वॉइस कॉल कनेक्ट हो रही है...");
+        }
+    }
+    
+    // ========== Chat & Users Management (localStorage based for demo) ==========
+    function joinChat() {
+        const name = document.getElementById('usernameInput').value.trim();
+        if(!name) {
+            alert("कृपया नाम लिखें!");
+            return;
+        }
+        currentUsername = name;
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appContainer').style.display = 'flex';
+        
+        // Load previous messages from localStorage
+        loadMessages();
+        // Simulate online users
+        updateUserList();
+        setInterval(() => updateUserList(), 3000);
+    }
+    
+    function updateUserList() {
+        // Demo: generate fake online users + current user
+        const fakeUsers = ['राहुल', 'प्रिया', 'अमित', 'सिमरन', 'विकास'];
+        const onlineUsers = [...new Set([currentUsername, ...fakeUsers.slice(0,3)])];
+        const userDiv = document.getElementById('userList');
+        userDiv.innerHTML = onlineUsers.map(u => `
+            <div class="user-item ${targetUserId === u ? 'active' : ''}" onclick="selectUser('${u}')">
+                <div class="user-status"></div>
+                <span>${u}</span>
+            </div>
+        `).join('');
+        document.getElementById('onlineCount').innerText = onlineUsers.length;
+    }
+    
+    function selectUser(user) {
+        if(user === currentUsername) {
+            alert("आप खुद से बात नहीं कर सकते!");
+            return;
+        }
+        targetUserId = user;
+        document.getElementById('currentChatUser').innerText = user + " से बात करें";
+        // Highlight active user
+        updateUserList();
+    }
+    
+    function sendMessage() {
+        const msg = document.getElementById('messageInput').value.trim();
+        if(!msg) return;
+        const messageObj = {
+            text: msg,
+            from: currentUsername,
+            to: targetUserId || "all",
+            time: new Date().toLocaleTimeString(),
+            type: 'text'
+        };
+        saveMessage(messageObj);
+        displayMessage(messageObj, true);
+        document.getElementById('messageInput').value = '';
+    }
+    
+    function displayMessage(msg, isSent) {
+        const area = document.getElementById('messagesArea');
+        if(area.firstChild && area.firstChild.innerText.includes("नमस्ते")) area.innerHTML = '';
+        const div = document.createElement('div');
+        div.className = `message ${isSent ? 'sent' : 'received'}`;
+        div.innerHTML = `
+            <div class="message-name">${msg.from}</div>
+            <div class="message-text">${escapeHtml(msg.text)}</div>
+            <div class="message-time">${msg.time}</div>
+        `;
+        area.appendChild(div);
+        area.scrollTop = area.scrollHeight;
+    }
+    
+    function saveMessage(msg) {
+        let messages = JSON.parse(localStorage.getItem('chat_messages') || '[]');
+        messages.push(msg);
+        if(messages.length > 100) messages.shift();
+        localStorage.setItem('chat_messages', JSON.stringify(messages));
+        // Broadcast to other tabs
+        const bc = new BroadcastChannel('chat_update');
+        bc.postMessage(msg);
+    }
+    
+    function loadMessages() {
+        const messages = JSON.parse(localStorage.getItem('chat_messages') || '[]');
+        messages.forEach(msg => {
+            displayMessage(msg, msg.from === currentUsername);
+        });
+    }
+    
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // Listen for chat updates across tabs
+    const chatChannel = new BroadcastChannel('chat_update');
+    chatChannel.onmessage = (e) => {
+        if(e.data.from !== currentUsername) {
+            displayMessage(e.data, false);
+        }
+    };
+    
+    // Auto scroll on new message
+    window.onload = () => {
+        if(!navigator.mediaDevices) {
+            alert("आपका ब्राउज़र वीडियो/वॉइस कॉल सपोर्ट नहीं करता। कृपया Chrome या Edge इस्तेमाल करें।");
+        }
+    };
+</script>
+</body>
+</html>
